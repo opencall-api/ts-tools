@@ -31,6 +31,12 @@ export {
   type ModuleMeta,
 } from "./registry.js";
 
+// Code generation
+export {
+  generateOpsModule,
+  type GenerateOpsOptions,
+} from "./codegen.js";
+
 // Validation utilities
 export {
   validateEnvelope,
