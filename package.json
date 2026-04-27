@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun --filter='*' run build",
+    "build": "bun --filter='@opencall/types' run build && bun --filter='@opencall/server' run build",
     "test": "bun test",
-    "typecheck": "bun --filter='*' run typecheck"
+    "typecheck": "bun --filter='@opencall/types' run typecheck && bun --filter='@opencall/server' run typecheck"
   },
   "devDependencies": {
     "@types/node": "^22",

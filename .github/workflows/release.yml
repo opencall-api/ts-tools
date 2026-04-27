@@ -59,8 +59,8 @@ jobs:
       - name: Test
         run: bun test
 
-      - name: Build all workspaces
-        run: bun --filter='*' run build
+      - name: Build all workspaces (types before server — server depends on types)
+        run: bun run build
 
       - name: Publish
         working-directory: packages/${{ steps.pkg.outputs.name }}

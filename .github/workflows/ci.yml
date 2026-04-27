@@ -15,6 +15,11 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun --filter='*' run typecheck
+      # Build first so packages/types/dist/ exists before server typechecks
+      # against it (server imports from "@opencall/types" which resolves
+      # through the workspace's published declaration files). The root
+      # `build` script serialises types-then-server because Bun's
+      # --filter='*' runs in parallel without topological awareness.
+      - run: bun run build
+      - run: bun run typecheck
       - run: bun test
-      - run: bun --filter='*' run build
