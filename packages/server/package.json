@@ -27,7 +27,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@opencall/types": "workspace:^0.1.0",
+    "@opencall/types": "^0.1.0",
     "zod": "^3.25.0"
   },
   "peerDependencies": {
