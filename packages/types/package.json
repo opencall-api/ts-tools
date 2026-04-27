@@ -1,0 +1,54 @@
+{
+  "name": "@opencall/types",
+  "version": "0.1.0",
+  "description": "OpenCALL canonical Zod schemas and types for the request/response envelope, registry, and error contract",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "zod": "^3.25.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "keywords": [
+    "opencall",
+    "api",
+    "zod",
+    "schema",
+    "types",
+    "envelope"
+  ],
+  "license": "Apache-2.0",
+  "homepage": "https://opencall-api.com/spec",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opencall-api/ts-tools.git",
+    "directory": "packages/types"
+  },
+  "bugs": {
+    "url": "https://github.com/opencall-api/ts-tools/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

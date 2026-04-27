@@ -1,50 +1,24 @@
 {
-  "name": "@opencall/ts-tools",
-  "version": "0.1.0",
-  "description": "OpenCALL tooling — JSDoc operation registry builder, Zod envelope schemas, and runtime payload validation",
+  "name": "@opencall/ts-tools-monorepo",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "opencall-generate-ops": "./dist/cli/generate-ops.js"
-  },
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
-  "files": [
-    "dist",
-    "src",
-    "LICENSE"
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "bun --filter '*' build",
     "test": "bun test",
-    "prepublishOnly": "tsc"
-  },
-  "dependencies": {
-    "zod": "^3.25.0"
+    "typecheck": "bun --filter '*' typecheck"
   },
   "devDependencies": {
     "@types/node": "^22",
-    "typescript": "^5"
+    "typescript": "^5",
+    "zod": "^3.25.0"
   },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "keywords": [
-    "opencall",
-    "api",
-    "zod",
-    "validation",
-    "operations",
-    "registry"
-  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dbryar/call-tools-typescript.git"
+    "url": "git+https://github.com/opencall-api/ts-tools.git"
   }
 }
