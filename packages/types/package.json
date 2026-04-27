@@ -48,7 +48,6 @@
     "url": "https://github.com/opencall-api/ts-tools/issues"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   }
 }
