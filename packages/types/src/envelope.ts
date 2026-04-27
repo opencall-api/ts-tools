@@ -61,4 +61,5 @@ export interface ResponseEnvelope {
   };
   retryAfterMs?: number;
   expiresAt?: number;
+  meta?: Record<string, unknown>;
 }
