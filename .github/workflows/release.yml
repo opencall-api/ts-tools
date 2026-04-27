@@ -59,11 +59,14 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
-      - name: Test
-        run: bun test
-
+      # Build first so packages/types/dist/ exists before server tests
+      # import "@opencall/types" (which resolves through the published
+      # declaration files via the workspace symlink).
       - name: Build all workspaces (types before server — server depends on types)
         run: bun run build
+
+      - name: Test
+        run: bun test
 
       - name: Publish
         working-directory: packages/${{ steps.pkg.outputs.name }}
