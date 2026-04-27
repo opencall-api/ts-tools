@@ -1,7 +1,7 @@
 import type { z } from "zod/v4";
-import { RequestEnvelopeSchema, type ResponseEnvelope } from "./envelope.js";
-import { protocolError, DomainError, domainError } from "./errors.js";
-import type { OperationModule, OperationResult } from "./types.js";
+import { RequestEnvelopeSchema, type ResponseEnvelope } from "@opencall/types";
+import { protocolError, DomainError, domainError } from "@opencall/types";
+import type { OperationModule, OperationResult } from "@opencall/types";
 
 /** Dispatch result returned to the server layer */
 export interface DispatchResult {

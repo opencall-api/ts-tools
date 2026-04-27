@@ -7,8 +7,8 @@ import {
   formatResponse,
   safeHandlerCall,
 } from "../src/validate.ts";
-import { DomainError } from "../src/errors.ts";
-import type { OperationModule } from "../src/types.ts";
+import { DomainError } from "@opencall/types";
+import type { OperationModule } from "@opencall/types";
 
 // ── Test fixtures ────────────────────────────────────────────────────────
 

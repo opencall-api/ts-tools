@@ -19,7 +19,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { generateOpsModule } from "../codegen.js";
-import type { RegistryResponse } from "../types.js";
+import type { RegistryResponse } from "@opencall/types";
 
 interface CliArgs {
   url?: string;
@@ -100,7 +100,7 @@ function resolveUrl(args: CliArgs): string {
     try {
       const text = readFileSync(".env.staging", "utf-8");
       const match = text.match(new RegExp(`${args.env}=(.+)`));
-      if (match) return match[1].trim();
+      if (match) return match[1]!.trim();
     } catch {
       // .env.staging not found, fall through
     }

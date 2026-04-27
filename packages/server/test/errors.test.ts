@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { DomainError, domainError, protocolError } from "../src/errors.ts";
+import { DomainError, domainError, protocolError } from "@opencall/types";
 
 describe("DomainError", () => {
   test("creates error with code and message", () => {

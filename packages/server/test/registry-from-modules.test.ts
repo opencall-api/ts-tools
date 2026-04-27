@@ -1,7 +1,8 @@
 import { test, expect, describe } from "bun:test";
 import { z } from "zod/v4";
 import { buildRegistryFromModules } from "../src/registry.ts";
-import type { OperationModule, ModuleEntry } from "../src/index.ts";
+import type { OperationModule } from "@opencall/types";
+import type { ModuleEntry } from "../src/registry.ts";
 
 // ── Fixture modules (simulating pre-imported operation files) ────────────
 

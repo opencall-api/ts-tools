@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { RequestEnvelopeSchema } from "../src/envelope.ts";
+import { RequestEnvelopeSchema } from "@opencall/types";
 
 describe("RequestEnvelopeSchema", () => {
   test("accepts minimal envelope with just op", () => {
