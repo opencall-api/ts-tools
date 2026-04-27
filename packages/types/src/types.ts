@@ -1,8 +1,9 @@
 import type { z } from "zod/v4";
+import type { StreamDescriptor } from "./envelope.js";
 
 /** Result returned from an operation handler */
 export interface OperationResult {
-  state: "complete" | "accepted";
+  state: "complete" | "accepted" | "streaming";
   result?: unknown;
   location?: {
     uri: string;
@@ -14,6 +15,8 @@ export interface OperationResult {
   };
   retryAfterMs?: number;
   expiresAt?: number;
+  /** Present when state === "streaming". The stream descriptor returned to the caller. */
+  stream?: StreamDescriptor;
 }
 
 /** Interface that each operation module must implement */

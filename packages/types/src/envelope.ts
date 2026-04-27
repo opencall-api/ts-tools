@@ -6,7 +6,7 @@ export const RequestEnvelopeSchema = z.object({
   args: z.record(z.string(), z.unknown()).optional().default({}),
   ctx: z
     .object({
-      requestId: z.uuid(),
+      requestId: z.uuid().optional(),
       sessionId: z.uuid().optional(),
       parentId: z.uuid().optional(),
       idempotencyKey: z.string().optional(),

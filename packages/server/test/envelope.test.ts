@@ -129,6 +129,51 @@ describe("RequestEnvelopeSchema", () => {
   });
 });
 
+import { test, expect } from "bun:test";
+import type { OperationResult } from "@opencall/types";
+
+test("RequestEnvelopeSchema accepts ctx without requestId", () => {
+  const result = RequestEnvelopeSchema.safeParse({
+    op: "v1:foo",
+    args: {},
+    ctx: { sessionId: "00000000-0000-0000-0000-000000000000" },
+  })
+  expect(result.success).toBe(true)
+})
+
+test("RequestEnvelopeSchema accepts empty ctx object", () => {
+  const result = RequestEnvelopeSchema.safeParse({
+    op: "v1:foo",
+    args: {},
+    ctx: {},
+  })
+  expect(result.success).toBe(true)
+})
+
+test("RequestEnvelopeSchema still validates the requestId UUID format when supplied", () => {
+  const result = RequestEnvelopeSchema.safeParse({
+    op: "v1:foo",
+    args: {},
+    ctx: { requestId: "not-a-uuid" },
+  })
+  expect(result.success).toBe(false)
+})
+
+test("OperationResult allows state: streaming with a stream descriptor", () => {
+  const result: OperationResult = {
+    state: "streaming",
+    stream: {
+      transport: "wss",
+      encoding: "protobuf",
+      schema: "device.PositionFrame",
+      location: "wss://streams.example.com/s/x",
+      sessionId: "session-1",
+    },
+  }
+  expect(result.state).toBe("streaming")
+  expect(result.stream?.transport).toBe("wss")
+})
+
 import type { ResponseEnvelope, StreamDescriptor } from "@opencall/types";
 
 describe("ResponseEnvelope", () => {
