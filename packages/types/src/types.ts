@@ -21,6 +21,8 @@ export interface OperationModule {
   args: z.ZodType;
   result: z.ZodType;
   handler: (args: unknown, ...rest: unknown[]) => Promise<OperationResult>;
+  /** If true, operation requires authentication; the dispatcher enforces this before calling handler. */
+  requiresAuth?: boolean;
   /** If set, the operation is deprecated. Contains the sunset ISO date. */
   sunset?: string;
   /** If set, the replacement operation name after deprecation */
