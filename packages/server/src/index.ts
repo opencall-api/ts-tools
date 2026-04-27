@@ -7,6 +7,7 @@ export {
   type ResponseState,
   type ResponseEnvelope,
   DomainError,
+  BackendUnavailableError,
   domainError,
   protocolError,
   type OperationResult,

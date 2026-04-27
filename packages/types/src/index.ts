@@ -7,6 +7,7 @@ export {
 
 export {
   DomainError,
+  BackendUnavailableError,
   domainError,
   protocolError,
 } from "./errors.js"
