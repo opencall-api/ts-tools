@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { RequestEnvelopeSchema } from "../src/envelope.ts";
+import { RequestEnvelopeSchema } from "@opencall/types";
 
 describe("RequestEnvelopeSchema", () => {
   test("accepts minimal envelope with just op", () => {
@@ -126,5 +126,19 @@ describe("RequestEnvelopeSchema", () => {
     if (result.success) {
       expect(result.data.args).toEqual({});
     }
+  });
+});
+
+import type { ResponseEnvelope } from "@opencall/types";
+
+describe("ResponseEnvelope", () => {
+  test("ResponseEnvelope accepts an optional meta record", () => {
+    const env: ResponseEnvelope = {
+      requestId: "00000000-0000-0000-0000-000000000000",
+      state: "complete",
+      result: { ok: true },
+      meta: { serviceStatus: "degraded", region: "ap-southeast-2" },
+    };
+    expect(env.meta?.serviceStatus).toBe("degraded");
   });
 });

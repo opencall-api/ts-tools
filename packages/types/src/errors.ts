@@ -41,3 +41,16 @@ export function protocolError(
     },
   };
 }
+
+/** Throwable when a backend dependency is unreachable. The dispatcher converts this into HTTP 503 with BACKEND_UNAVAILABLE. */
+export class BackendUnavailableError extends Error {
+  public readonly service: string
+  public readonly retriable: boolean
+
+  constructor(service: string, message: string, cause?: unknown) {
+    super(message, cause !== undefined ? { cause } : undefined)
+    this.name = "BackendUnavailableError"
+    this.service = service
+    this.retriable = true
+  }
+}

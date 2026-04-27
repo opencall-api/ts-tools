@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "types-v*.*.*"
+      - "server-v*.*.*"
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Workspace package to publish (types or server)"
+        required: true
+        type: choice
+        options:
+          - types
+          - server
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node (for npm provenance)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Determine package
+        id: pkg
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.package }}" ]; then
+            echo "name=${{ inputs.package }}" >> "$GITHUB_OUTPUT"
+          else
+            tag="${GITHUB_REF##refs/tags/}"
+            case "$tag" in
+              types-v*) echo "name=types" >> "$GITHUB_OUTPUT" ;;
+              server-v*) echo "name=server" >> "$GITHUB_OUTPUT" ;;
+              *) echo "Unrecognised tag $tag"; exit 1 ;;
+            esac
+          fi
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Test
+        run: bun test
+
+      - name: Build all workspaces (types before server — server depends on types)
+        run: bun run build
+
+      - name: Publish
+        working-directory: packages/${{ steps.pkg.outputs.name }}
+        run: npm publish --provenance --access public

@@ -8,7 +8,7 @@
  * Pure logic — no I/O. The CLI wrapper handles fetching and writing.
  */
 
-import type { RegistryResponse, RegistryEntry } from "./types.js";
+import type { RegistryResponse, RegistryEntry } from "@opencall/types";
 
 /** JSON Schema subset that the registry serves */
 interface JsonSchema {
@@ -50,7 +50,7 @@ function jsonSchemaToTs(schema: JsonSchema, indent = 0): string {
     const nonNull = variants.filter((v) => v.type !== "null");
     const hasNull = variants.some((v) => v.type === "null");
     if (nonNull.length === 1 && hasNull) {
-      return `${jsonSchemaToTs(nonNull[0], indent)} | null`;
+      return `${jsonSchemaToTs(nonNull[0]!, indent)} | null`;
     }
     return variants.map((v) => jsonSchemaToTs(v, indent)).join(" | ");
   }

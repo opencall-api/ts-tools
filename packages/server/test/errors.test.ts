@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { DomainError, domainError, protocolError } from "../src/errors.ts";
+import { DomainError, domainError, protocolError, BackendUnavailableError } from "@opencall/types";
 
 describe("DomainError", () => {
   test("creates error with code and message", () => {
@@ -52,5 +52,23 @@ describe("protocolError", () => {
     expect(resp.body.requestId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     );
+  });
+});
+
+describe("BackendUnavailableError", () => {
+  test("BackendUnavailableError carries service and retriable", () => {
+    const err = new BackendUnavailableError("postgres", "connection refused");
+    expect(err).toBeInstanceOf(Error);
+    expect(err).toBeInstanceOf(BackendUnavailableError);
+    expect(err.name).toBe("BackendUnavailableError");
+    expect(err.service).toBe("postgres");
+    expect(err.retriable).toBe(true);
+    expect(err.message).toBe("connection refused");
+  });
+
+  test("BackendUnavailableError preserves cause", () => {
+    const cause = new Error("ECONNREFUSED 127.0.0.1:5432");
+    const err = new BackendUnavailableError("postgres", "down", cause);
+    expect(err.cause).toBe(cause);
   });
 });

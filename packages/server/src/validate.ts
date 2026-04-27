@@ -1,7 +1,8 @@
 import type { z } from "zod/v4";
-import { RequestEnvelopeSchema, type ResponseEnvelope } from "./envelope.js";
-import { protocolError, DomainError, domainError } from "./errors.js";
-import type { OperationModule, OperationResult } from "./types.js";
+import { RequestEnvelopeSchema, type ResponseEnvelope } from "@opencall/types";
+import { protocolError, DomainError, domainError, BackendUnavailableError } from "@opencall/types";
+import type { OperationModule, OperationResult } from "@opencall/types";
+import { isDbConnectionError } from "./db-errors.js";
 
 /** Dispatch result returned to the server layer */
 export interface DispatchResult {
@@ -193,6 +194,41 @@ export async function safeHandlerCall(
         body: domainError(requestId, err.code, err.message, err.cause),
       };
     }
+
+    if (err instanceof BackendUnavailableError) {
+      return {
+        status: 503,
+        body: {
+          requestId,
+          ...(sessionId !== undefined && { sessionId }),
+          state: "error",
+          error: {
+            code: "BACKEND_UNAVAILABLE",
+            message: err.message,
+            cause: { service: err.service, retriable: err.retriable },
+          },
+          retryAfterMs: 60_000,
+        },
+      }
+    }
+
+    if (isDbConnectionError(err)) {
+      return {
+        status: 503,
+        body: {
+          requestId,
+          ...(sessionId !== undefined && { sessionId }),
+          state: "error",
+          error: {
+            code: "BACKEND_UNAVAILABLE",
+            message: "Database temporarily unavailable",
+            cause: { service: "postgres", retriable: true },
+          },
+          retryAfterMs: 60_000,
+        },
+      }
+    }
+
     const message = err instanceof Error ? err.message : String(err);
     return {
       status: 500,

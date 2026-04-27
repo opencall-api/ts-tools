@@ -10,7 +10,7 @@ import type {
   OperationModule,
   RegistryEntry,
   RegistryResponse,
-} from "./types.js";
+} from "@opencall/types";
 
 /** Replaceable runtime dependencies for non-Node environments (e.g. Bun, Deno) */
 export interface RuntimeAdapters {
