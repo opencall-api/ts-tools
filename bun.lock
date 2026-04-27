@@ -9,6 +9,20 @@
         "zod": "^3.25.0",
       },
     },
+    "packages/client": {
+      "name": "@opencall/client",
+      "version": "0.1.0",
+      "bin": {
+        "opencall-codegen": "./dist/cli/codegen.js",
+      },
+      "dependencies": {
+        "@opencall/types": "^0.1.0",
+        "zod": "^3.25.0",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/server": {
       "name": "@opencall/server",
       "version": "0.2.0",
@@ -35,6 +49,8 @@
     },
   },
   "packages": {
+    "@opencall/client": ["@opencall/client@workspace:packages/client"],
+
     "@opencall/server": ["@opencall/server@workspace:packages/server"],
 
     "@opencall/types": ["@opencall/types@workspace:packages/types"],

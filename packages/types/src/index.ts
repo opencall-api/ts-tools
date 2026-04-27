@@ -3,6 +3,7 @@ export {
   type RequestEnvelope,
   type ResponseState,
   type ResponseEnvelope,
+  type StreamDescriptor,
 } from "./envelope.js"
 
 export {

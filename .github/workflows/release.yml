@@ -5,15 +5,17 @@ on:
     tags:
       - "types-v*.*.*"
       - "server-v*.*.*"
+      - "client-v*.*.*"
   workflow_dispatch:
     inputs:
       package:
-        description: "Workspace package to publish (types or server)"
+        description: "Workspace package to publish (types, server, or client)"
         required: true
         type: choice
         options:
           - types
           - server
+          - client
 
 permissions:
   contents: read
@@ -49,6 +51,7 @@ jobs:
             case "$tag" in
               types-v*) echo "name=types" >> "$GITHUB_OUTPUT" ;;
               server-v*) echo "name=server" >> "$GITHUB_OUTPUT" ;;
+              client-v*) echo "name=client" >> "$GITHUB_OUTPUT" ;;
               *) echo "Unrecognised tag $tag"; exit 1 ;;
             esac
           fi
@@ -56,11 +59,14 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
-      - name: Test
-        run: bun test
-
+      # Build first so packages/types/dist/ exists before server tests
+      # import "@opencall/types" (which resolves through the published
+      # declaration files via the workspace symlink).
       - name: Build all workspaces (types before server — server depends on types)
         run: bun run build
+
+      - name: Test
+        run: bun test
 
       - name: Publish
         working-directory: packages/${{ steps.pkg.outputs.name }}
