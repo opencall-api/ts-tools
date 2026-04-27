@@ -7,7 +7,7 @@ import {
   formatResponse,
   safeHandlerCall,
 } from "../src/validate.ts";
-import { DomainError } from "@opencall/types";
+import { DomainError, BackendUnavailableError } from "@opencall/types";
 import type { OperationModule } from "@opencall/types";
 
 // ── Test fixtures ────────────────────────────────────────────────────────
@@ -288,4 +288,28 @@ describe("safeHandlerCall", () => {
     const result = await safeHandlerCall(handler, ["x", "y"], "req-1");
     expect(result.body.result).toEqual({ a: "x", b: "y" });
   });
+
+  test("safeHandlerCall converts BackendUnavailableError into HTTP 503", async () => {
+    const handler = async () => {
+      throw new BackendUnavailableError("oauth-server", "down for maintenance")
+    }
+    const res = await safeHandlerCall(handler, [], "00000000-0000-0000-0000-000000000000")
+    expect(res.status).toBe(503)
+    expect(res.body.state).toBe("error")
+    expect(res.body.error?.code).toBe("BACKEND_UNAVAILABLE")
+    expect(res.body.error?.message).toBe("down for maintenance")
+    expect((res.body.error?.cause as { service: string }).service).toBe("oauth-server")
+    expect(res.body.retryAfterMs).toBe(60_000)
+  })
+
+  test("safeHandlerCall converts a postgres connection error into HTTP 503", async () => {
+    const handler = async () => {
+      throw new Error("connect ECONNREFUSED 127.0.0.1:5432")
+    }
+    const res = await safeHandlerCall(handler, [], "00000000-0000-0000-0000-000000000000")
+    expect(res.status).toBe(503)
+    expect(res.body.error?.code).toBe("BACKEND_UNAVAILABLE")
+    expect((res.body.error?.cause as { service: string }).service).toBe("postgres")
+    expect(res.body.retryAfterMs).toBe(60_000)
+  })
 });
