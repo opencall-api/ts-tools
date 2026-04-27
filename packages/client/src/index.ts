@@ -6,3 +6,6 @@ export type { CallAndWaitOptions } from "./wait.js"
 
 export { retrieveChunked } from "./chunked.js"
 export type { ChunkResponse } from "./chunked.js"
+
+export { subscribeStream } from "./stream.js"
+export type { StreamDescriptor } from "@opencall/types"
