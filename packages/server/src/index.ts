@@ -19,6 +19,8 @@ export {
 // Server-only surface.
 export { parseJSDoc } from "./jsdoc.js"
 
+export { isDbConnectionError } from "./db-errors.js"
+
 export {
   buildRegistry,
   buildRegistryFromModules,
