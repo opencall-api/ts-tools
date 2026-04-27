@@ -1,6 +1,6 @@
 # @opencall/types
 
-> **Canonical docs:** [https://opencall-api.com/spec](https://opencall-api.com/spec). The OpenCALL specification, raw markdown for agents, and SDK guides live at the canonical site. GitHub may block non-Copilot bots.
+> **Docs:** [https://opencall-api.com](https://opencall-api.com) (human-readable). AI agents may prefer raw markdown at [`/spec`](https://opencall-api.com/spec) — GitHub blocks most non-Copilot bots.
 
 The canonical Zod schemas and TypeScript types for the OpenCALL request/response envelope, operation registry, and error contract.
 

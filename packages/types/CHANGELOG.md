@@ -9,6 +9,9 @@
 - `OperationResult.state` now allows `"streaming"`. Streaming-subscription handlers can return a streaming result through `OperationModule`; `@opencall/server@0.2.1`'s `formatResponse` maps this to a 202 response with the populated `stream` field on the response envelope.
 - `OperationResult.stream?: StreamDescriptor` field, populated when `state === "streaming"`.
 
+### Docs
+- README banner and `homepage` now point at `https://opencall-api.com` (the human-readable docs landing). The `/spec` path is reserved for raw markdown that AI agents fetch directly.
+
 ## 0.1.1 — 2026-04-27
 
 ### Added

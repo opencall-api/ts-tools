@@ -43,7 +43,7 @@
     "dispatcher"
   ],
   "license": "Apache-2.0",
-  "homepage": "https://opencall-api.com/spec",
+  "homepage": "https://opencall-api.com",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/opencall-api/ts-tools.git",

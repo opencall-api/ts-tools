@@ -1,6 +1,6 @@
 {
   "name": "@opencall/client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenCALL client — the thin call() function plus polling, streaming, chunked retrieval, and a codegen CLI",
   "type": "module",
   "main": "dist/index.js",
@@ -29,7 +29,7 @@
   },
   "keywords": ["opencall", "api", "client", "fetch", "codegen", "agent"],
   "license": "Apache-2.0",
-  "homepage": "https://opencall-api.com/spec/client/",
+  "homepage": "https://opencall-api.com",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/opencall-api/ts-tools.git",
