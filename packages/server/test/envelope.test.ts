@@ -129,7 +129,7 @@ describe("RequestEnvelopeSchema", () => {
   });
 });
 
-import type { ResponseEnvelope } from "@opencall/types";
+import type { ResponseEnvelope, StreamDescriptor } from "@opencall/types";
 
 describe("ResponseEnvelope", () => {
   test("ResponseEnvelope accepts an optional meta record", () => {
@@ -140,5 +140,33 @@ describe("ResponseEnvelope", () => {
       meta: { serviceStatus: "degraded", region: "ap-southeast-2" },
     };
     expect(env.meta?.serviceStatus).toBe("degraded");
+  });
+
+  test("ResponseEnvelope accepts an optional stream descriptor", () => {
+    const env: ResponseEnvelope = {
+      requestId: "x",
+      state: "streaming",
+      stream: {
+        transport: "wss",
+        encoding: "protobuf",
+        schema: "device.PositionFrame",
+        location: "wss://streams.example.com/s/x",
+        sessionId: "session-1",
+      },
+    }
+    expect(env.stream?.transport).toBe("wss")
+  });
+
+  test("StreamDescriptor accepts optional auth + expiresAt", () => {
+    const desc: StreamDescriptor = {
+      transport: "wss",
+      encoding: "protobuf",
+      schema: "device.PositionFrame",
+      location: "wss://streams.example.com/s/x",
+      sessionId: "session-1",
+      expiresAt: 1739282400,
+      auth: { credentialType: "bearer", credential: "short-lived", expiresAt: 1739282400 },
+    }
+    expect(desc.auth?.credentialType).toBe("bearer")
   });
 });

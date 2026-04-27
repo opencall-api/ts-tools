@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 — 2026-04-27
+
+### Added
+- `StreamDescriptor` interface and `ResponseEnvelope.stream?: StreamDescriptor` field. Models the streaming subscription response shape that the spec already documents on the wire.
+
 ## 0.1.0 — 2026-04-27
 
 Initial release. Extracted from the previously-private `@opencall/ts-tools` codebase.

@@ -38,7 +38,18 @@ export const RequestEnvelopeSchema = z.object({
 export type RequestEnvelope = z.infer<typeof RequestEnvelopeSchema>;
 
 /** Response envelope states */
-export type ResponseState = "complete" | "accepted" | "pending" | "error";
+export type ResponseState = "complete" | "accepted" | "pending" | "error" | "streaming";
+
+/** Streaming subscription descriptor returned when state is "streaming" */
+export interface StreamDescriptor {
+  transport: string;
+  encoding: string;
+  schema: string;
+  location: string;
+  sessionId: string;
+  expiresAt?: number;
+  auth?: { credentialType: string; credential: string; expiresAt?: number };
+}
 
 /** Canonical response envelope */
 export interface ResponseEnvelope {
@@ -62,4 +73,5 @@ export interface ResponseEnvelope {
   retryAfterMs?: number;
   expiresAt?: number;
   meta?: Record<string, unknown>;
+  stream?: StreamDescriptor;
 }
