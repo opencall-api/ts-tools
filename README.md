@@ -8,7 +8,7 @@ Monorepo for the official `@opencall` TypeScript packages. Canonical docs at [ht
 | --- | --- |
 | [`@opencall/types`](packages/types/) | Canonical Zod schemas and types — the source of truth for the OpenCALL envelope, registry, and error contract. |
 | [`@opencall/server`](packages/server/) | Server-side tooling: registry builder, JSDoc parser, dispatcher helpers, validators, codegen. |
-| `@opencall/client` (forthcoming) | The thin OpenCALL client + codegen CLI. Phase 1b. |
+| [`@opencall/client`](packages/client/) | Thin OpenCALL client + `opencall-codegen` CLI. |
 
 ## Development
 
