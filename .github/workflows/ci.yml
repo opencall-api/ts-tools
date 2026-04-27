@@ -15,6 +15,6 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun --filter '*' run typecheck
+      - run: bun --filter='*' run typecheck
       - run: bun test
-      - run: bun --filter '*' run build
+      - run: bun --filter='*' run build

@@ -60,7 +60,7 @@ jobs:
         run: bun test
 
       - name: Build all workspaces
-        run: bun --filter '*' run build
+        run: bun --filter='*' run build
 
       - name: Publish
         working-directory: packages/${{ steps.pkg.outputs.name }}
