@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1 — 2026-04-27
+
+### Changed
+- Bumped `@opencall/types` dep from `^0.1.1` to `^0.1.2` (picks up the relaxed `ctx.requestId` schema and the streaming `OperationResult` shape).
+
+### Docs
+- README banner and `homepage` now point at `https://opencall-api.com` (the human-readable docs landing). The `/spec` path is reserved for raw markdown that AI agents fetch directly.
+
 ## 0.1.0 — 2026-04-27
 
 Initial release. The thin OpenCALL client + codegen.

@@ -1,6 +1,6 @@
 # @opencall/server
 
-> **Canonical docs:** [https://opencall-api.com/spec](https://opencall-api.com/spec). The OpenCALL specification, raw markdown for agents, and SDK guides live at the canonical site. GitHub may block non-Copilot bots.
+> **Docs:** [https://opencall-api.com](https://opencall-api.com) (human-readable). AI agents may prefer raw markdown at [`/spec`](https://opencall-api.com/spec) — GitHub blocks most non-Copilot bots.
 
 Server-side tooling for implementing OpenCALL APIs in TypeScript. Provides the operation registry builder, JSDoc-driven operation discovery, dispatcher helpers, runtime payload validation, and a code generator.
 

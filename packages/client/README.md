@@ -1,6 +1,6 @@
 # @opencall/client
 
-> **Canonical docs:** [https://opencall-api.com/spec/client/](https://opencall-api.com/spec/client/). Raw markdown is served alongside; GitHub may block non-Copilot bots.
+> **Docs:** [https://opencall-api.com](https://opencall-api.com) (human-readable). AI agents may prefer raw markdown at [`/spec`](https://opencall-api.com/spec) — GitHub blocks most non-Copilot bots.
 
 The thin OpenCALL client. One `call()` function over `fetch`, plus a small handful of helpers for async polling, stream subscription, chunked retrieval, and code generation. Built on [`@opencall/types`](https://www.npmjs.com/package/@opencall/types) — the canonical Zod schemas and types are imported from there, not redefined.
 

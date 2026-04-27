@@ -160,6 +160,21 @@ export function formatResponse(
   if (opResult.expiresAt !== undefined)
     response.expiresAt = opResult.expiresAt;
 
+  if (opResult.state === "streaming") {
+    if (!opResult.stream) {
+      throw new Error("formatResponse: state=streaming requires a stream descriptor on OperationResult");
+    }
+    const streamBody: ResponseEnvelope = {
+      requestId,
+      ...(sessionId !== undefined && { sessionId }),
+      state: "streaming",
+      stream: opResult.stream,
+      ...(opResult.expiresAt !== undefined && { expiresAt: opResult.expiresAt }),
+    };
+    const streamBodyFinal = meta ? { ...streamBody, meta } : streamBody;
+    return { status: 202, body: streamBodyFinal };
+  }
+
   let status: number;
   if (opResult.state === "accepted") {
     status = 202;

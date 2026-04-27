@@ -1,6 +1,6 @@
 {
   "name": "@opencall/types",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "OpenCALL canonical Zod schemas and types for the request/response envelope, registry, and error contract",
   "type": "module",
   "main": "dist/index.js",
@@ -38,7 +38,7 @@
     "envelope"
   ],
   "license": "Apache-2.0",
-  "homepage": "https://opencall-api.com/spec",
+  "homepage": "https://opencall-api.com",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/opencall-api/ts-tools.git",

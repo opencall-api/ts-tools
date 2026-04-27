@@ -8,7 +8,7 @@ import {
   safeHandlerCall,
 } from "../src/validate.ts";
 import { DomainError, BackendUnavailableError } from "@opencall/types";
-import type { OperationModule } from "@opencall/types";
+import type { OperationModule, OperationResult } from "@opencall/types";
 
 // ── Test fixtures ────────────────────────────────────────────────────────
 
@@ -236,6 +236,40 @@ describe("formatResponse", () => {
     expect(result.body.result).toEqual({ data: 1 });
     expect((result.body as Record<string, unknown>).meta).toEqual({ extra: "info" });
   });
+
+  test("formatResponse maps streaming OperationResult to 202 + state=streaming", () => {
+    const opResult: OperationResult = {
+      state: "streaming",
+      stream: {
+        transport: "wss",
+        encoding: "protobuf",
+        schema: "device.PositionFrame",
+        location: "wss://streams.example.com/s/ggg",
+        sessionId: "mission-001",
+      },
+    }
+    const res = formatResponse(opResult, "00000000-0000-0000-0000-000000000000")
+    expect(res.status).toBe(202)
+    expect(res.body.state).toBe("streaming")
+    expect(res.body.stream).toEqual(opResult.stream)
+  })
+
+  test("formatResponse passes through sessionId for streaming responses", () => {
+    const opResult: OperationResult = {
+      state: "streaming",
+      stream: {
+        transport: "wss", encoding: "protobuf", schema: "x",
+        location: "wss://x", sessionId: "abc",
+      },
+    }
+    const res = formatResponse(opResult, "00000000-0000-0000-0000-000000000000", "session-1")
+    expect(res.body.sessionId).toBe("session-1")
+  })
+
+  test("formatResponse throws when streaming result has no stream descriptor", () => {
+    const opResult = { state: "streaming" } as OperationResult
+    expect(() => formatResponse(opResult, "00000000-0000-0000-0000-000000000000")).toThrow(/stream/i)
+  })
 });
 
 // ── safeHandlerCall ──────────────────────────────────────────────────────
