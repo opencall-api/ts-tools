@@ -5,15 +5,17 @@ on:
     tags:
       - "types-v*.*.*"
       - "server-v*.*.*"
+      - "client-v*.*.*"
   workflow_dispatch:
     inputs:
       package:
-        description: "Workspace package to publish (types or server)"
+        description: "Workspace package to publish (types, server, or client)"
         required: true
         type: choice
         options:
           - types
           - server
+          - client
 
 permissions:
   contents: read
@@ -49,6 +51,7 @@ jobs:
             case "$tag" in
               types-v*) echo "name=types" >> "$GITHUB_OUTPUT" ;;
               server-v*) echo "name=server" >> "$GITHUB_OUTPUT" ;;
+              client-v*) echo "name=client" >> "$GITHUB_OUTPUT" ;;
               *) echo "Unrecognised tag $tag"; exit 1 ;;
             esac
           fi
