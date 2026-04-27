@@ -9,3 +9,5 @@ export type { ChunkResponse } from "./chunked.js"
 
 export { subscribeStream } from "./stream.js"
 export type { StreamDescriptor } from "@opencall/types"
+
+export { generateClientTypes, type CodegenOptions } from "./codegen.js"
