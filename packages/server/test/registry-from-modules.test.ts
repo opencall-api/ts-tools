@@ -33,8 +33,16 @@ const entries: ModuleEntry[] = [
       op: "v1:greeting.hello",
       execution: "sync",
       timeout: 3000,
+      onTimeout: "fail",
       security: "greet:read",
-      cache: "none",
+      cache: "public",
+      cacheTtl: 300,
+      cacheVary: ["args.locale"],
+      cacheTags: ["greeting"],
+      telemetry: {
+        spanName: "greeting.hello",
+        attributes: ["name"],
+      },
     },
   },
   {
@@ -43,8 +51,20 @@ const entries: ModuleEntry[] = [
       op: "v1:greeting.farewell",
       execution: "sync",
       timeout: 2000,
+      onTimeout: "escalate",
       security: "greet:read greet:write",
       flags: "sideEffecting deprecated",
+      idempotency: {
+        supported: true,
+        required: true,
+        ttlSeconds: 86400,
+        keyHeader: "Idempotency-Key",
+      },
+      telemetry: {
+        spanName: "greeting.farewell",
+        attributes: ["name"],
+        sensitive: ["name"],
+      },
     },
   },
 ];
@@ -68,10 +88,10 @@ describe("buildRegistryFromModules", () => {
     expect(hello?.executionModel).toBe("sync");
   });
 
-  test("parses timeout from meta", () => {
+  test("builds sync policy from meta", () => {
     const { registry } = buildRegistryFromModules(entries);
     const hello = registry.operations.find((e) => e.op === "v1:greeting.hello");
-    expect(hello?.maxSyncMs).toBe(3000);
+    expect(hello?.sync).toEqual({ maxMs: 3000, onTimeout: "fail" });
   });
 
   test("parses auth scopes from meta", () => {
@@ -94,6 +114,36 @@ describe("buildRegistryFromModules", () => {
     const farewell = registry.operations.find((e) => e.op === "v1:greeting.farewell");
     expect(farewell?.sideEffecting).toBe(true);
     expect(farewell?.deprecated).toBe(true);
+  });
+
+  test("builds idempotency, cache, and telemetry blocks", () => {
+    const { registry } = buildRegistryFromModules(entries);
+    const hello = registry.operations.find((e) => e.op === "v1:greeting.hello");
+    const farewell = registry.operations.find((e) => e.op === "v1:greeting.farewell");
+
+    expect(hello?.cache).toEqual({
+      enabled: true,
+      ttl: 300,
+      scope: "public",
+      vary: ["args.locale"],
+      tags: ["greeting"],
+    });
+    expect(hello?.telemetry).toEqual({
+      spanName: "greeting.hello",
+      attributes: ["name"],
+    });
+
+    expect(farewell?.idempotency).toEqual({
+      supported: true,
+      required: true,
+      ttlSeconds: 86400,
+      keyHeader: "Idempotency-Key",
+    });
+    expect(farewell?.telemetry).toEqual({
+      spanName: "greeting.farewell",
+      attributes: ["name"],
+      sensitive: ["name"],
+    });
   });
 
   test("picks up sunset/replacement from module when not in meta", () => {
@@ -136,18 +186,24 @@ describe("buildRegistryFromModules", () => {
   test("uses custom callVersion", () => {
     const { registry } = buildRegistryFromModules(entries, {
       callVersion: "2026-03-01",
+      endpoints: ["rpc", "path"],
+      errorsUrl: "/.well-known/errors",
     });
     expect(registry.callVersion).toBe("2026-03-01");
+    expect(registry.endpoints).toEqual(["rpc", "path"]);
+    expect(registry.errorsUrl).toBe("/.well-known/errors");
   });
 
-  test("generates etag and json", () => {
+  test("generates schemaHash, etag, and json", () => {
     const { json, etag } = buildRegistryFromModules(entries);
     expect(json).toBeTruthy();
-    expect(etag).toMatch(/^"[a-f0-9]{64}"$/);
+    expect(etag).toMatch(/^"sha256:[a-f0-9]{64}"$/);
 
     const parsed = JSON.parse(json);
     expect(parsed.operations).toBeArray();
     expect(parsed.operations).toHaveLength(2);
+    expect(parsed.schemaHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(parsed.endpoints).toEqual(["rpc"]);
   });
 
   test("etag is deterministic for same input", () => {
@@ -178,10 +234,10 @@ describe("buildRegistryFromModules", () => {
     ]);
     const op = registry.operations[0];
     expect(op.executionModel).toBe("sync");
-    expect(op.maxSyncMs).toBe(5000);
-    expect(op.ttlSeconds).toBe(0);
+    expect(op.sync).toEqual({ maxMs: 5000, onTimeout: "fail" });
+    expect(op.ttlSeconds).toBeUndefined();
     expect(op.authScopes).toEqual([]);
-    expect(op.cachingPolicy).toBe("none");
+    expect(op.cache).toBeUndefined();
     expect(op.sideEffecting).toBe(false);
   });
 
@@ -204,8 +260,16 @@ describe("buildRegistryFromModules", () => {
           op: "v1:greeting.hello",
           execution: "sync",
           timeout: 3000,
+          onTimeout: "fail",
           security: "greet:read",
-          cache: "none",
+          cache: "public",
+          cacheTtl: 300,
+          cacheVary: ["args.locale"],
+          cacheTags: ["greeting"],
+          telemetry: {
+            spanName: "greeting.hello",
+            attributes: ["name"],
+          },
         },
       },
       {
@@ -214,11 +278,23 @@ describe("buildRegistryFromModules", () => {
           op: "v1:greeting.farewell",
           execution: "sync",
           timeout: 2000,
+          onTimeout: "escalate",
           security: "greet:read greet:write",
           flags: "sideEffecting deprecated",
           sunset: "2025-01-01",
           replacement: "v1:greeting.goodbye",
           cache: "none",
+          idempotency: {
+            supported: true,
+            required: true,
+            ttlSeconds: 86400,
+            keyHeader: "Idempotency-Key",
+          },
+          telemetry: {
+            spanName: "greeting.farewell",
+            attributes: ["name"],
+            sensitive: ["name"],
+          },
         },
       },
     ]);

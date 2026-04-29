@@ -7,9 +7,18 @@ import { join, extname } from "node:path";
 import { createHash as nodeCreateHash } from "node:crypto";
 import { parseJSDoc } from "./jsdoc.js";
 import type {
+  CachePolicy,
+  ExecutionModel,
+  IdempotencyPolicy,
+  MediaSchemaEntry,
   OperationModule,
+  RegistryEndpoint,
   RegistryEntry,
   RegistryResponse,
+  StreamPolicy,
+  SyncPolicy,
+  SyncTimeoutPolicy,
+  TelemetryPolicy,
 } from "@opencall/types";
 
 /** Replaceable runtime dependencies for non-Node environments (e.g. Bun, Deno) */
@@ -30,6 +39,10 @@ export interface BuildRegistryOptions {
   opsDir: string;
   /** OpenCALL version string (defaults to env CALL_VERSION or "2026-02-10") */
   callVersion?: string;
+  /** Invocation forms supported by the service (defaults to ["rpc"]) */
+  endpoints?: RegistryEndpoint[];
+  /** Optional URL for the server's error catalog */
+  errorsUrl?: string;
   /** File extension to scan for (defaults to ".ts") */
   ext?: string;
   /** Override runtime dependencies for non-Node environments */
@@ -39,11 +52,18 @@ export interface BuildRegistryOptions {
 /** Inline metadata for a module entry (replaces JSDoc parsing) */
 export interface ModuleMeta {
   op: string;
-  execution?: "sync" | "async";
+  execution?: ExecutionModel;
   timeout?: number;
+  onTimeout?: SyncTimeoutPolicy;
   ttl?: number;
   security?: string;
-  cache?: "none" | "server" | "location";
+  cache?: "none" | "server" | "location" | "public" | "private" | "tenant";
+  cacheTtl?: number;
+  cacheVary?: string[] | string;
+  cacheTags?: string[] | string;
+  idempotency?: Partial<IdempotencyPolicy>;
+  telemetry?: Partial<TelemetryPolicy>;
+  stream?: StreamPolicy;
   flags?: string;
   sunset?: string;
   replacement?: string;
@@ -69,28 +89,198 @@ export interface BuildRegistryResult {
   etag: string;
 }
 
+interface RegistryModuleShape {
+  args: z.ZodType;
+  result?: z.ZodType;
+  handler: OperationModule["handler"];
+  mediaSchema?: MediaSchemaEntry[];
+  frameSchema?: z.ZodType;
+}
+
 // ── Shared helpers ───────────────────────────────────────────────────────
+
+function splitList(value?: string): string[] {
+  if (!value) return [];
+  return value
+    .split(/[,\s]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseBoolean(value: string | undefined, fallback = false): boolean {
+  if (value === undefined) return fallback;
+  return value === "true";
+}
+
+function parseSyncPolicy(tags: Record<string, string | undefined>): SyncPolicy {
+  return {
+    maxMs: tags["timeout"] ? parseInt(tags["timeout"], 10) : 5000,
+    onTimeout: (tags["onTimeout"] as SyncTimeoutPolicy | undefined) ?? "fail",
+  };
+}
+
+function parseIdempotencyPolicy(
+  tags: Record<string, string | undefined>,
+  sideEffecting: boolean,
+): IdempotencyPolicy | undefined {
+  const flags = splitList(tags["flags"]);
+  const legacyRequired = flags.includes("idempotencyRequired");
+  const raw = splitList(tags["idempotency"]);
+  const supported =
+    raw.length > 0 ||
+    legacyRequired ||
+    sideEffecting ||
+    parseBoolean(tags["idempotencySupported"], false);
+  const required =
+    legacyRequired ||
+    raw.includes("required") ||
+    parseBoolean(tags["idempotencyRequired"], false);
+
+  if (!supported && !required) return undefined;
+
+  const ttlToken = raw.find((token) => token.startsWith("ttl="));
+  const headerToken = raw.find((token) => token.startsWith("header="));
+
+  return {
+    supported: true,
+    required,
+    ttlSeconds: ttlToken ? parseInt(ttlToken.slice(4), 10) : undefined,
+    keyHeader: headerToken?.slice(7),
+  };
+}
+
+function parseCachePolicy(
+  tags: Record<string, string | undefined>,
+  authScopes: string[],
+): CachePolicy | undefined {
+  const legacyCache = tags["cache"];
+  if (!legacyCache) return undefined;
+
+  if (legacyCache === "none" || legacyCache === "location") {
+    return { enabled: false };
+  }
+
+  const scope =
+    legacyCache === "server"
+      ? (authScopes.length > 0 ? "private" : "public")
+      : (legacyCache as "public" | "private" | "tenant");
+
+  const vary = splitList(tags["cacheVary"]);
+  const cacheTags = splitList(tags["cacheTags"]);
+  const ttl = tags["cacheTtl"]
+    ? parseInt(tags["cacheTtl"], 10)
+    : tags["ttl"]
+      ? parseInt(tags["ttl"], 10)
+      : 0;
+
+  return {
+    enabled: true,
+    ttl,
+    scope,
+    ...(vary.length > 0 && { vary }),
+    ...(cacheTags.length > 0 && { tags: cacheTags }),
+  };
+}
+
+function parseTelemetryPolicy(
+  tags: Record<string, string | undefined>,
+): TelemetryPolicy | undefined {
+  if (!tags["telemetry"] && !tags["telemetryAttributes"] && !tags["telemetrySensitive"]) {
+    return undefined;
+  }
+
+  const telemetryTokens = splitList(tags["telemetry"]);
+  const spanNameToken = telemetryTokens.find((token) => token.startsWith("span="));
+  const attributesToken = telemetryTokens.find((token) => token.startsWith("attrs="));
+  const sensitiveToken = telemetryTokens.find((token) => token.startsWith("sensitive="));
+  const spanName = spanNameToken?.slice(5) ?? tags["telemetry"] ?? tags["op"]?.split(":")[1];
+
+  if (!spanName) return undefined;
+
+  const attributes = [
+    ...splitList(attributesToken?.slice(6)),
+    ...splitList(tags["telemetryAttributes"]),
+  ];
+  const sensitive = [
+    ...splitList(sensitiveToken?.slice(10)),
+    ...splitList(tags["telemetrySensitive"]),
+  ];
+
+  return {
+    spanName,
+    ...(attributes.length > 0 && { attributes }),
+    ...(sensitive.length > 0 && { sensitive }),
+  };
+}
+
+function parseStreamPolicy(tags: Record<string, string | undefined>): StreamPolicy | undefined {
+  const executionModel = (tags["execution"] as ExecutionModel | undefined) ?? "sync";
+  if (executionModel !== "stream") return undefined;
+
+  const streamTokens = splitList(tags["stream"]);
+  const transportsToken = streamTokens.find((token) => token.startsWith("transports="));
+  const encodingsToken = streamTokens.find((token) => token.startsWith("encodings="));
+  const ttlToken = streamTokens.find((token) => token.startsWith("ttl="));
+  const frameIntegrityToken = streamTokens.find((token) => token.startsWith("frameIntegrity="));
+
+  const supportedTransports = [
+    ...splitList(transportsToken?.slice(11)),
+    ...splitList(tags["streamTransports"]),
+  ];
+  const supportedEncodings = [
+    ...splitList(encodingsToken?.slice(10)),
+    ...splitList(tags["streamEncodings"]),
+  ];
+  const ttlSeconds = ttlToken
+    ? parseInt(ttlToken.slice(4), 10)
+    : tags["ttl"]
+      ? parseInt(tags["ttl"], 10)
+      : 3600;
+
+  return {
+    supportedTransports,
+    supportedEncodings,
+    ttlSeconds,
+    ...(frameIntegrityToken !== undefined && {
+      frameIntegrity: parseBoolean(frameIntegrityToken.slice(15), false),
+    }),
+  };
+}
 
 /** Build a RegistryEntry from a module's Zod schemas and parsed metadata tags */
 function buildEntry(
-  mod: { args: z.ZodType; result: z.ZodType },
+  mod: RegistryModuleShape,
   tags: Record<string, string | undefined>,
 ): RegistryEntry {
+  const executionModel = (tags["execution"] as ExecutionModel | undefined) ?? "sync";
+  const sideEffecting = tags["flags"]?.includes("sideEffecting") ?? false;
+  const authScopes = splitList(tags["security"]);
+  const cache = parseCachePolicy(tags, authScopes);
+  const telemetry = parseTelemetryPolicy(tags);
+  const stream = parseStreamPolicy(tags);
+  const idempotency = parseIdempotencyPolicy(tags, sideEffecting);
+
   const entry: RegistryEntry = {
     op: tags["op"]!,
+    executionModel,
+    sideEffecting,
     argsSchema: z.toJSONSchema(mod.args),
-    resultSchema: z.toJSONSchema(mod.result),
-    sideEffecting: tags["flags"]?.includes("sideEffecting") ?? false,
-    idempotencyRequired:
-      tags["flags"]?.includes("idempotencyRequired") ?? false,
-    executionModel:
-      (tags["execution"] as "sync" | "async") ?? "sync",
-    maxSyncMs: tags["timeout"] ? parseInt(tags["timeout"], 10) : 5000,
-    ttlSeconds: tags["ttl"] ? parseInt(tags["ttl"], 10) : 0,
-    authScopes: tags["security"] ? tags["security"].split(/\s+/) : [],
-    cachingPolicy:
-      (tags["cache"] as "none" | "server" | "location") ?? "none",
+    authScopes,
+    ...(mod.result && executionModel !== "stream" && {
+      resultSchema: z.toJSONSchema(mod.result),
+    }),
+    ...(mod.mediaSchema && mod.mediaSchema.length > 0 && { mediaSchema: mod.mediaSchema }),
+    ...(mod.frameSchema && { frameSchema: z.toJSONSchema(mod.frameSchema) }),
+    ...(executionModel === "sync" && { sync: parseSyncPolicy(tags) }),
+    ...(idempotency && { idempotency }),
+    ...(cache && { cache }),
+    ...(telemetry && { telemetry }),
+    ...(stream && { stream }),
   };
+
+  if (executionModel === "async") {
+    entry.ttlSeconds = tags["ttl"] ? parseInt(tags["ttl"], 10) : 0;
+  }
 
   if (tags["flags"]?.includes("deprecated")) {
     entry.deprecated = true;
@@ -103,12 +293,12 @@ function buildEntry(
 
 /** Build an OperationModule with sunset/replacement metadata */
 function buildOpModule(
-  mod: { args: z.ZodType; result: z.ZodType; handler: OperationModule["handler"] },
+  mod: RegistryModuleShape,
   tags: Record<string, string | undefined>,
 ): OperationModule {
   const opModule: OperationModule = {
     args: mod.args,
-    result: mod.result,
+    result: mod.result ?? z.any(),
     handler: mod.handler,
   };
   if (tags["sunset"]) opModule.sunset = tags["sunset"];
@@ -121,13 +311,24 @@ function finalizeRegistry(
   entries: RegistryEntry[],
   modules: Map<string, OperationModule>,
   callVersion: string,
+  endpoints: RegistryEndpoint[],
+  errorsUrl: string | undefined,
   hashCreate: (algorithm: string) => {
     update(data: string): { digest(encoding: "hex"): string };
   },
 ): BuildRegistryResult {
-  const registry: RegistryResponse = { callVersion, operations: entries };
+  const baseRegistry = {
+    callVersion,
+    endpoints,
+    ...(errorsUrl !== undefined && { errorsUrl }),
+    operations: entries,
+  };
+  const schemaHash = `sha256:${hashCreate("sha256")
+    .update(JSON.stringify(baseRegistry))
+    .digest("hex")}`;
+  const registry: RegistryResponse = { ...baseRegistry, schemaHash };
   const json = JSON.stringify(registry);
-  const etag = `"${hashCreate("sha256").update(json).digest("hex")}"`;
+  const etag = `"${schemaHash}"`;
   return { registry, modules, json, etag };
 }
 
@@ -166,7 +367,7 @@ function finalizeRegistry(
 export async function buildRegistry(
   options: BuildRegistryOptions
 ): Promise<BuildRegistryResult> {
-  const { opsDir, ext = ".ts" } = options;
+  const { opsDir, endpoints = ["rpc"], errorsUrl, ext = ".ts" } = options;
   const callVersion =
     options.callVersion ?? process.env.CALL_VERSION ?? "2026-02-10";
 
@@ -185,13 +386,13 @@ export async function buildRegistry(
 
     if (!tags["op"]) continue;
 
-    const mod = await import(filePath);
+    const mod = (await import(filePath)) as RegistryModuleShape;
 
     modules.set(tags["op"], buildOpModule(mod, tags));
     entries.push(buildEntry(mod, tags));
   }
 
-  return finalizeRegistry(entries, modules, callVersion, hashCreate);
+  return finalizeRegistry(entries, modules, callVersion, endpoints, errorsUrl, hashCreate);
 }
 
 // ── buildRegistryFromModules (no filesystem) ─────────────────────────────
@@ -232,10 +433,17 @@ export async function buildRegistry(
  */
 export function buildRegistryFromModules(
   moduleEntries: ModuleEntry[],
-  options?: { callVersion?: string; createHash?: RuntimeAdapters["createHash"] },
+  options?: {
+    callVersion?: string;
+    endpoints?: RegistryEndpoint[];
+    errorsUrl?: string;
+    createHash?: RuntimeAdapters["createHash"];
+  },
 ): BuildRegistryResult {
   const callVersion =
     options?.callVersion ?? process.env.CALL_VERSION ?? "2026-02-10";
+  const endpoints = options?.endpoints ?? ["rpc"];
+  const errorsUrl = options?.errorsUrl;
   const hashCreate = options?.createHash ?? nodeCreateHash;
 
   const entries: RegistryEntry[] = [];
@@ -247,9 +455,41 @@ export function buildRegistryFromModules(
       op: meta.op,
       execution: meta.execution,
       timeout: meta.timeout?.toString(),
+      onTimeout: meta.onTimeout,
       ttl: meta.ttl?.toString(),
       security: meta.security,
       cache: meta.cache,
+      cacheTtl: meta.cacheTtl?.toString(),
+      cacheVary: Array.isArray(meta.cacheVary) ? meta.cacheVary.join(",") : meta.cacheVary,
+      cacheTags: Array.isArray(meta.cacheTags) ? meta.cacheTags.join(",") : meta.cacheTags,
+      idempotency: meta.idempotency
+        ? [
+            meta.idempotency.required ? "required" : undefined,
+            meta.idempotency.ttlSeconds !== undefined
+              ? `ttl=${meta.idempotency.ttlSeconds}`
+              : undefined,
+            meta.idempotency.keyHeader ? `header=${meta.idempotency.keyHeader}` : undefined,
+          ]
+            .filter(Boolean)
+            .join(" ")
+        : undefined,
+      idempotencySupported: meta.idempotency?.supported?.toString(),
+      idempotencyRequired: meta.idempotency?.required?.toString(),
+      telemetry: meta.telemetry?.spanName,
+      telemetryAttributes: meta.telemetry?.attributes?.join(","),
+      telemetrySensitive: meta.telemetry?.sensitive?.join(","),
+      stream: meta.stream
+        ? [
+            `transports=${meta.stream.supportedTransports.join(",")}`,
+            `encodings=${meta.stream.supportedEncodings.join(",")}`,
+            `ttl=${meta.stream.ttlSeconds}`,
+            meta.stream.frameIntegrity !== undefined
+              ? `frameIntegrity=${meta.stream.frameIntegrity}`
+              : undefined,
+          ]
+            .filter(Boolean)
+            .join(" ")
+        : undefined,
       flags: meta.flags,
       sunset: meta.sunset ?? mod.sunset,
       replacement: meta.replacement ?? mod.replacement,
@@ -259,5 +499,5 @@ export function buildRegistryFromModules(
     entries.push(buildEntry(mod, tags));
   }
 
-  return finalizeRegistry(entries, modules, callVersion, hashCreate);
+  return finalizeRegistry(entries, modules, callVersion, endpoints, errorsUrl, hashCreate);
 }

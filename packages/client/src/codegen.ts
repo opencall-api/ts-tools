@@ -74,7 +74,7 @@ export function generateClientTypes(
       lines.push(`   */`)
     }
     const argsType = renderSchema(entry.argsSchema as Record<string, unknown>, "  ")
-    const resultType = renderSchema(entry.resultSchema as Record<string, unknown>, "  ")
+    const resultType = renderSchema((entry.resultSchema ?? {}) as Record<string, unknown>, "  ")
     lines.push(`  "${entry.op}": {`)
     lines.push(`    args: ${argsType}`)
     lines.push(`    result: ${resultType}`)

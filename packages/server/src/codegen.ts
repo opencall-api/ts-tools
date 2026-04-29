@@ -123,7 +123,7 @@ export function generateOpsModule(options: GenerateOpsOptions): string {
       1,
     );
     const resultType = jsonSchemaToTs(
-      entry.resultSchema as unknown as JsonSchema,
+      (entry.resultSchema ?? {}) as unknown as JsonSchema,
       1,
     );
 

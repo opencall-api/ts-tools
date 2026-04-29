@@ -3,6 +3,12 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@opencall/types": ["packages/types/dist/index.d.ts"],
+      "@opencall/server": ["packages/server/dist/index.d.ts"],
+      "@opencall/client": ["packages/client/dist/index.d.ts"]
+    },
     "lib": ["ES2022"],
     "strict": true,
     "noUncheckedIndexedAccess": true,

@@ -6,8 +6,14 @@ import { z } from "zod/v4";
  * @op v1:greeting.hello
  * @execution sync
  * @timeout 3000
+ * @onTimeout fail
  * @security greet:read
- * @cache none
+ * @cache public
+ * @cacheTtl 300
+ * @cacheVary args.locale
+ * @cacheTags greeting
+ * @telemetry span=greeting.hello
+ * @telemetryAttributes name
  */
 
 export const args = z.object({

@@ -8,23 +8,31 @@ import { spawnSync } from "node:child_process"
 
 const fixture: RegistryResponse = {
   callVersion: "2026-02-10",
+  schemaHash: "sha256:test",
+  endpoints: ["rpc"],
   operations: [
     {
       op: "v1:orders.getItem",
+      executionModel: "sync",
+      sideEffecting: false,
       argsSchema: { type: "object", properties: { orderId: { type: "string" } }, required: ["orderId"] },
       resultSchema: { type: "object", properties: { name: { type: "string" }, price: { type: "number" } } },
-      sideEffecting: false, idempotencyRequired: false,
-      executionModel: "sync", maxSyncMs: 1000, ttlSeconds: 0,
-      authScopes: [], cachingPolicy: "none",
+      authScopes: [],
+      sync: { maxMs: 1000, onTimeout: "fail" },
+      idempotency: { supported: false, required: false },
+      cache: { enabled: false },
       deprecated: true, sunset: "2026-06-01", replacement: "v2:orders.getItem",
     },
     {
       op: "v2:orders.getItem",
+      executionModel: "sync",
+      sideEffecting: false,
       argsSchema: { type: "object", properties: { orderId: { type: "string" } }, required: ["orderId"] },
       resultSchema: { type: "object", properties: { name: { type: "string" }, price: { type: "number" }, currency: { type: "string" } } },
-      sideEffecting: false, idempotencyRequired: false,
-      executionModel: "sync", maxSyncMs: 1000, ttlSeconds: 0,
-      authScopes: [], cachingPolicy: "none",
+      authScopes: [],
+      sync: { maxMs: 1000, onTimeout: "fail" },
+      idempotency: { supported: false, required: false },
+      cache: { enabled: false },
     },
   ],
 }
@@ -61,11 +69,17 @@ test("opencall-codegen reads a local JSON registry and writes a .d.ts", async ()
   const outFile = join(dir, "out.d.ts")
   await writeFile(inFile, JSON.stringify({
     callVersion: "2026-02-10",
+    schemaHash: "sha256:test",
+    endpoints: ["rpc"],
     operations: [{
       op: "v1:foo",
+      executionModel: "sync",
+      sideEffecting: false,
       argsSchema: { type: "object" }, resultSchema: { type: "object" },
-      sideEffecting: false, idempotencyRequired: false, executionModel: "sync",
-      maxSyncMs: 0, ttlSeconds: 0, authScopes: [], cachingPolicy: "none",
+      authScopes: [],
+      sync: { maxMs: 0, onTimeout: "fail" },
+      idempotency: { supported: false, required: false },
+      cache: { enabled: false },
     }],
   }))
   const cliPath = resolve(import.meta.dir, "..", "src", "cli", "codegen.ts")

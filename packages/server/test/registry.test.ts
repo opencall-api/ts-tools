@@ -31,10 +31,10 @@ describe("buildRegistry", () => {
     expect(hello?.executionModel).toBe("sync");
   });
 
-  test("parses timeout from JSDoc", async () => {
+  test("builds sync policy from JSDoc", async () => {
     const { registry } = await buildRegistry({ opsDir: fixturesDir });
     const hello = registry.operations.find((e) => e.op === "v1:greeting.hello");
-    expect(hello?.maxSyncMs).toBe(3000);
+    expect(hello?.sync).toEqual({ maxMs: 3000, onTimeout: "fail" });
   });
 
   test("parses auth scopes from JSDoc", async () => {
@@ -60,6 +60,36 @@ describe("buildRegistry", () => {
     expect(farewell?.deprecated).toBe(true);
   });
 
+  test("builds idempotency, cache, and telemetry blocks", async () => {
+    const { registry } = await buildRegistry({ opsDir: fixturesDir });
+    const hello = registry.operations.find((e) => e.op === "v1:greeting.hello");
+    const farewell = registry.operations.find((e) => e.op === "v1:greeting.farewell");
+
+    expect(hello?.cache).toEqual({
+      enabled: true,
+      ttl: 300,
+      scope: "public",
+      vary: ["args.locale"],
+      tags: ["greeting"],
+    });
+    expect(hello?.telemetry).toEqual({
+      spanName: "greeting.hello",
+      attributes: ["name"],
+    });
+
+    expect(farewell?.idempotency).toEqual({
+      supported: true,
+      required: true,
+      ttlSeconds: 86400,
+      keyHeader: "Idempotency-Key",
+    });
+    expect(farewell?.telemetry).toEqual({
+      spanName: "greeting.farewell",
+      attributes: ["name"],
+      sensitive: ["name"],
+    });
+  });
+
   test("parses sunset and replacement", async () => {
     const { registry } = await buildRegistry({ opsDir: fixturesDir });
     const farewell = registry.operations.find((e) => e.op === "v1:greeting.farewell");
@@ -82,18 +112,24 @@ describe("buildRegistry", () => {
     const { registry } = await buildRegistry({
       opsDir: fixturesDir,
       callVersion: "2026-03-01",
+      endpoints: ["rpc", "path"],
+      errorsUrl: "/.well-known/errors",
     });
     expect(registry.callVersion).toBe("2026-03-01");
+    expect(registry.endpoints).toEqual(["rpc", "path"]);
+    expect(registry.errorsUrl).toBe("/.well-known/errors");
   });
 
-  test("generates etag and json", async () => {
+  test("generates schemaHash, etag, and json", async () => {
     const { json, etag } = await buildRegistry({ opsDir: fixturesDir });
     expect(json).toBeTruthy();
-    expect(etag).toMatch(/^"[a-f0-9]{64}"$/);
+    expect(etag).toMatch(/^"sha256:[a-f0-9]{64}"$/);
 
     // JSON should parse back to registry
     const parsed = JSON.parse(json);
     expect(parsed.operations).toBeArray();
+    expect(parsed.schemaHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(parsed.endpoints).toEqual(["rpc"]);
   });
 
   test("etag is deterministic for same input", async () => {
@@ -154,7 +190,7 @@ describe("buildRegistry", () => {
 
     // Results are still correct
     expect(registry.operations).toHaveLength(2);
-    expect(etag).toMatch(/^"[a-f0-9]{64}"$/);
+    expect(etag).toMatch(/^"sha256:[a-f0-9]{64}"$/);
   });
 
   test("partial runtime adapters fall back to node defaults", async () => {

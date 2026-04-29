@@ -6,10 +6,15 @@ import { z } from "zod/v4";
  * @op v1:greeting.farewell
  * @execution sync
  * @timeout 2000
+ * @onTimeout escalate
  * @security greet:read
  * @security greet:write
  * @flags sideEffecting deprecated
  * @cache none
+ * @idempotency required ttl=86400 header=Idempotency-Key
+ * @telemetry span=greeting.farewell
+ * @telemetryAttributes name
+ * @telemetrySensitive name
  * @sunset 2025-01-01
  * @replacement v1:greeting.goodbye
  */

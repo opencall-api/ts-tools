@@ -14,8 +14,17 @@ export {
 } from "./errors.js"
 
 export type {
+  CachePolicy,
+  ExecutionModel,
+  IdempotencyPolicy,
+  MediaSchemaEntry,
   OperationResult,
   OperationModule,
+  RegistryEndpoint,
   RegistryEntry,
   RegistryResponse,
+  StreamPolicy,
+  SyncPolicy,
+  SyncTimeoutPolicy,
+  TelemetryPolicy,
 } from "./types.js"

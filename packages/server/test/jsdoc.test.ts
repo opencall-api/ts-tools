@@ -7,12 +7,14 @@ describe("parseJSDoc", () => {
 /** @op v1:catalog.list
  *  @execution sync
  *  @timeout 5000
+ *  @onTimeout fail
  */
 `;
     const tags = parseJSDoc(source);
     expect(tags.op).toBe("v1:catalog.list");
     expect(tags.execution).toBe("sync");
     expect(tags.timeout).toBe("5000");
+    expect(tags.onTimeout).toBe("fail");
   });
 
   test("accumulates repeated tags with space separator", () => {
@@ -53,8 +55,13 @@ describe("parseJSDoc", () => {
  *  @execution async
  *  @timeout 30000
  *  @ttl 3600
- *  @cache server
+ *  @cache public
+ *  @cacheTtl 300
  *  @flags sideEffecting deprecated
+ *  @idempotency required ttl=86400 header=Idempotency-Key
+ *  @telemetry span=report.generate
+ *  @telemetryAttributes reportId,status
+ *  @telemetrySensitive accountNumber
  *  @sunset 2025-06-01
  *  @replacement v2:report.generate
  */
@@ -64,7 +71,12 @@ describe("parseJSDoc", () => {
     expect(tags.execution).toBe("async");
     expect(tags.timeout).toBe("30000");
     expect(tags.ttl).toBe("3600");
-    expect(tags.cache).toBe("server");
+    expect(tags.cache).toBe("public");
+    expect(tags.cacheTtl).toBe("300");
+    expect(tags.idempotency).toBe("required ttl=86400 header=Idempotency-Key");
+    expect(tags.telemetry).toBe("span=report.generate");
+    expect(tags.telemetryAttributes).toBe("reportId,status");
+    expect(tags.telemetrySensitive).toBe("accountNumber");
     expect(tags.flags).toContain("deprecated");
     expect(tags.sunset).toBe("2025-06-01");
     expect(tags.replacement).toBe("v2:report.generate");
