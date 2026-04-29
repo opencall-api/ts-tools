@@ -1,5 +1,10 @@
 import { test, expect, describe } from "bun:test";
-import { RequestEnvelopeSchema } from "@opencall/types";
+import {
+  RequestEnvelopeSchema,
+  type OperationResult,
+  type ResponseEnvelope,
+  type StreamDescriptor,
+} from "../src/index.ts";
 
 describe("RequestEnvelopeSchema", () => {
   test("accepts minimal envelope with just op", () => {
@@ -129,9 +134,6 @@ describe("RequestEnvelopeSchema", () => {
   });
 });
 
-import { test, expect } from "bun:test";
-import type { OperationResult } from "@opencall/types";
-
 test("RequestEnvelopeSchema accepts ctx without requestId", () => {
   const result = RequestEnvelopeSchema.safeParse({
     op: "v1:foo",
@@ -173,8 +175,6 @@ test("OperationResult allows state: streaming with a stream descriptor", () => {
   expect(result.state).toBe("streaming")
   expect(result.stream?.transport).toBe("wss")
 })
-
-import type { ResponseEnvelope, StreamDescriptor } from "@opencall/types";
 
 describe("ResponseEnvelope", () => {
   test("ResponseEnvelope accepts an optional meta record", () => {

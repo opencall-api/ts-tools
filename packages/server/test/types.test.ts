@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test"
 import { z } from "zod/v4"
-import type { OperationModule } from "@opencall/types"
+import type { OperationModule } from "../src/index.ts"
 
 test("OperationModule allows requiresAuth: true", () => {
   const op: OperationModule = {

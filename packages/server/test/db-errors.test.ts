@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { isDbConnectionError } from "@opencall/server"
+import { isDbConnectionError } from "../src/db-errors.ts"
 
 test("recognizes ECONNREFUSED", () => {
   expect(isDbConnectionError(new Error("connect ECONNREFUSED 127.0.0.1:5432"))).toBe(true)

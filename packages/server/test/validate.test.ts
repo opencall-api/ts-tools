@@ -1,14 +1,16 @@
 import { test, expect, describe } from "bun:test";
 import { z } from "zod/v4";
 import {
+  DomainError,
+  BackendUnavailableError,
   validateEnvelope,
   validateArgs,
   checkSunset,
   formatResponse,
   safeHandlerCall,
-} from "../src/validate.ts";
-import { DomainError, BackendUnavailableError } from "@opencall/types";
-import type { OperationModule, OperationResult } from "@opencall/types";
+  type OperationModule,
+  type OperationResult,
+} from "../src/index.ts";
 
 // ── Test fixtures ────────────────────────────────────────────────────────
 
