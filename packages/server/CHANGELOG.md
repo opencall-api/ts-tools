@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2 — 2026-05-01
+
+### Changed
+- `buildRegistry()` and `buildRegistryFromModules()` now emit the current structured OpenCALL registry response, including `schemaHash`, service-level `endpoints`, optional `errorsUrl`, and structured per-operation `sync`, `idempotency`, `cache`, `telemetry`, and `stream` blocks.
+- Server tests now import the local workspace sources directly so CI does not depend on Bun creating workspace package links before `bun test`.
+
+### Docs
+- Updated test fixtures and metadata examples to reflect the current registry contract.
+
 ## 0.2.1 — 2026-04-27
 
 ### Added

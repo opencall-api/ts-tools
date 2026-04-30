@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — 2026-05-01
+
+### Changed
+- `generateClientTypes()` and the server-side codegen now tolerate registry entries whose `resultSchema` is omitted for streaming operations under the current spec.
+- Bumped `@opencall/types` dep from `^0.1.2` to `^0.1.3` to consume the structured registry contract types.
+
 ## 0.1.1 — 2026-04-27
 
 ### Changed

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3 — 2026-05-01
+
+### Changed
+- `RegistryEntry` and `RegistryResponse` now match the current OpenCALL spec shape. The registry includes `schemaHash`, `endpoints`, optional `errorsUrl`, and structured `sync`, `idempotency`, `cache`, `telemetry`, and `stream` blocks instead of the earlier flattened metadata fields.
+
+### Added
+- Registry helper types for the structured spec fields: `RegistryEndpoint`, `SyncPolicy`, `IdempotencyPolicy`, `CachePolicy`, `TelemetryPolicy`, `StreamPolicy`, and `MediaSchemaEntry`.
+
 ## 0.1.2 — 2026-04-27
 
 ### Changed

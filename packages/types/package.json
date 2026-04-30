@@ -1,6 +1,6 @@
 {
   "name": "@opencall/types",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "OpenCALL canonical Zod schemas and types for the request/response envelope, registry, and error contract",
   "type": "module",
   "main": "dist/index.js",
