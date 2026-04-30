@@ -71,9 +71,9 @@ jobs:
       - name: Debug npm auth
         working-directory: packages/${{ steps.pkg.outputs.name }}
         run: |
-          npm config get registry
-          npm whoami
-          npm access list packages opencall || true
+          npm --workspaces=false config get registry
+          npm --workspaces=false whoami
+          npm --workspaces=false access list packages opencall || true
 
       - name: Publish
         working-directory: packages/${{ steps.pkg.outputs.name }}
