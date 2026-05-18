@@ -39,12 +39,17 @@ jobs:
           bun-version: latest
 
       # No registry-url: setup-node@v4 injects GITHUB_TOKEN as NODE_AUTH_TOKEN when
-      # registry-url is set, which blocks npm's OIDC Trusted Publishers path even after
-      # unsetting the variable. The Publish step writes its own minimal .npmrc instead.
+      # registry-url is set, which blocks npm's OIDC Trusted Publishers path.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      # npm 10.x (bundled with Node.js 22) does not have lib/utils/oidc.js — the
+      # OIDC Trusted Publishers exchange was reworked in npm 11. Install it explicitly
+      # so the oidc() call in publish.js fires before the noCreds auth check.
+      - name: Upgrade npm
+        run: npm install -g npm@latest
 
       - name: Determine package
         id: pkg
@@ -78,7 +83,4 @@ jobs:
         working-directory: packages/${{ steps.pkg.outputs.name }}
         run: |
           echo "registry=https://registry.npmjs.org/" > "${HOME}/.npmrc"
-          # --no-workspaces: npm 10 routes publish through execWorkspaces when it
-          # detects a workspace root above the CWD; that path skips the OIDC
-          # Trusted Publishers auth check. Force the non-workspace exec path.
-          npm publish --provenance --access public --no-workspaces --loglevel verbose
+          npm publish --provenance --access public --no-workspaces
