@@ -37,13 +37,13 @@ jobs:
         with:
           bun-version: latest
 
-      # Node is needed for `npm publish`. registry-url is intentionally omitted:
-      # setup-node injects GITHUB_TOKEN as NODE_AUTH_TOKEN when registry-url is set,
-      # which blocks npm's OIDC path and causes a 404 on every publish attempt.
+      # registry-url creates the .npmrc that npm needs to find the OIDC endpoint.
+      # Without it, npm never attempts the OIDC token exchange and returns ENEEDAUTH.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Determine package
         id: pkg
@@ -75,4 +75,9 @@ jobs:
 
       - name: Publish
         working-directory: packages/${{ steps.pkg.outputs.name }}
+        env:
+          # setup-node exports GITHUB_TOKEN as NODE_AUTH_TOKEN when registry-url is set.
+          # Clearing it here lets npm fall through to the OIDC token exchange
+          # (npm Trusted Publishers) instead of sending an invalid GitHub credential.
+          NODE_AUTH_TOKEN: ""
         run: npm publish --provenance --access public
