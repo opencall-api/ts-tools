@@ -25,18 +25,40 @@ bun add @opencall/server @opencall/types
 
 ## Quick example
 
-```ts
-import { buildRegistry, validateEnvelope, safeHandlerCall } from "@opencall/server"
+Each operation file carries a JSDoc block that drives the registry:
 
-const { registry } = await buildRegistry({ operationsDir: "./src/operations" })
+```ts
+/**
+ * @op v1:orders.getItem
+ * @execution sync
+ * @timeout 5000
+ * @security orders:read
+ * @cache server
+ * @ttl 300
+ */
+export const args = z.object({ orderId: z.string(), itemId: z.string() })
+export const result = z.object({ id: z.string(), name: z.string(), price: z.number() })
+export async function handler(input: unknown): Promise<OperationResult> { ... }
+```
+
+`buildRegistry` scans the directory, reads each JSDoc block, and emits a spec-aligned `/.well-known/ops` response — no separate registry file to maintain:
+
+```ts
+import { buildRegistry, validateEnvelope, validateArgs, safeHandlerCall } from "@opencall/server"
+
+const { modules } = await buildRegistry({ opsDir: "./src/operations" })
 
 // Inside your HTTP handler:
-const validation = validateEnvelope(rawBody)
-if (!validation.ok) {
-  // return validation.error
-}
-const operation = registry.byOp(validation.envelope.op)
-const result = await safeHandlerCall(operation.handler, [validation.envelope.args], requestId)
+const envResult = validateEnvelope(rawBody)
+if (!envResult.ok) return envResult.error          // { status, body }
+
+const operation = modules.get(envResult.envelope.op)
+if (!operation) return { status: 400, body: { ... } }
+
+const argsResult = validateArgs(operation, envResult.envelope.args, requestId)
+if (!argsResult.ok) return argsResult.error
+
+const result = await safeHandlerCall(operation.handler, [argsResult.data], requestId)
 ```
 
 ## OpenCALL spec compatibility
