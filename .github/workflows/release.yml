@@ -45,12 +45,6 @@ jobs:
         with:
           node-version: "22"
 
-      # npm 10.x (bundled with Node.js 22) does not have lib/utils/oidc.js — the
-      # OIDC Trusted Publishers exchange was reworked in npm 11. Install it explicitly
-      # so the oidc() call in publish.js fires before the noCreds auth check.
-      - name: Upgrade npm
-        run: npm install -g npm@latest
-
       - name: Determine package
         id: pkg
         run: |
@@ -82,5 +76,29 @@ jobs:
       - name: Publish
         working-directory: packages/${{ steps.pkg.outputs.name }}
         run: |
-          echo "registry=https://registry.npmjs.org/" > "${HOME}/.npmrc"
+          set -euo pipefail
+
+          # npm 10.x (Node.js 22) lacks lib/utils/oidc.js (reworked in npm 11),
+          # so the OIDC Trusted Publishers exchange never fires. Do it manually:
+
+          # 1. Request GitHub OIDC token (audience scoped to npmjs.org)
+          ID_TOKEN=$(curl -fsSL \
+            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm%3Aregistry.npmjs.org" \
+            | jq -r '.value')
+
+          # 2. Exchange with npm Trusted Publishers for a temporary publish token
+          PKG_NAME=$(jq -r '.name' package.json)
+          PKG_ESCAPED="${PKG_NAME/\//%2F}"
+          EXCHANGE=$(curl -fsSL -X POST \
+            "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/${PKG_ESCAPED}" \
+            -H "Authorization: Bearer ${ID_TOKEN}")
+          NPM_TOKEN=$(echo "${EXCHANGE}" | jq -r '.token // empty')
+          [ -z "${NPM_TOKEN}" ] && { echo "OIDC exchange failed: ${EXCHANGE}"; exit 1; }
+
+          # 3. Configure npm with the temporary token
+          printf "registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=%s\n" \
+            "${NPM_TOKEN}" > "${HOME}/.npmrc"
+
+          # 4. Publish — --provenance uses sigstore's own OIDC flow independently
           npm publish --provenance --access public --no-workspaces
